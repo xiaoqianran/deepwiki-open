@@ -20,7 +20,7 @@ from api.config import (
 )
 from api.data_pipeline import count_tokens, get_file_content
 from api.bedrock_client import BedrockClient
-from api.openai_client import OpenAIClient
+from api.openai_client import OpenAIClient, get_delta_text
 from api.litellm_client import LiteLLMClient
 from api.openrouter_client import OpenRouterClient
 from api.azureai_client import AzureAIClient
@@ -655,7 +655,7 @@ This file contains...
                         if len(choices) > 0:
                             delta = getattr(choices[0], "delta", None)
                             if delta is not None:
-                                text = getattr(delta, "content", None)
+                                text = get_delta_text(delta)
                                 if text is not None:
                                     await websocket.send_text(text)
                     # Explicitly close the WebSocket connection after the response is complete
@@ -677,7 +677,7 @@ This file contains...
                         if len(choices) > 0:
                             delta = getattr(choices[0], "delta", None)
                             if delta is not None:
-                                text = getattr(delta, "content", None)
+                                text = get_delta_text(delta)
                                 if text is not None:
                                     await websocket.send_text(text)
                     # Explicitly close the WebSocket connection after the response is complete
@@ -717,7 +717,7 @@ This file contains...
                         if len(choices) > 0:
                             delta = getattr(choices[0], "delta", None)
                             if delta is not None:
-                                text = getattr(delta, "content", None)
+                                text = get_delta_text(delta)
                                 if text is not None:
                                     await websocket.send_text(text)
                     # Explicitly close the WebSocket connection after the response is complete
@@ -860,7 +860,7 @@ This file contains...
                                 if len(choices) > 0:
                                     delta = getattr(choices[0], "delta", None)
                                     if delta is not None:
-                                        text = getattr(delta, "content", None)
+                                        text = get_delta_text(delta)
                                         if text is not None:
                                             await websocket.send_text(text)
                         except Exception as e_fallback:
@@ -913,7 +913,7 @@ This file contains...
                                 if len(choices) > 0:
                                     delta = getattr(choices[0], "delta", None)
                                     if delta is not None:
-                                        text = getattr(delta, "content", None)
+                                        text = get_delta_text(delta)
                                         if text is not None:
                                             await websocket.send_text(text)
                         except Exception as e_fallback:

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 from api.config import get_model_config, configs, OPENROUTER_API_KEY, OPENAI_API_KEY, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 from api.data_pipeline import count_tokens, get_file_content
-from api.openai_client import OpenAIClient
+from api.openai_client import OpenAIClient, get_delta_text
 from api.openrouter_client import OpenRouterClient
 from api.bedrock_client import BedrockClient
 from api.azureai_client import AzureAIClient
@@ -494,7 +494,7 @@ async def chat_completions_stream(request: ChatCompletionRequest):
                            if len(choices) > 0:
                                delta = getattr(choices[0], "delta", None)
                                if delta is not None:
-                                    text = getattr(delta, "content", None)
+                                    text = get_delta_text(delta)
                                     if text is not None:
                                         yield text
                     except Exception as e_openai:
@@ -525,7 +525,7 @@ async def chat_completions_stream(request: ChatCompletionRequest):
                             if len(choices) > 0:
                                 delta = getattr(choices[0], "delta", None)
                                 if delta is not None:
-                                    text = getattr(delta, "content", None)
+                                    text = get_delta_text(delta)
                                     if text is not None:
                                         yield text
                     except Exception as e_azure:
@@ -676,7 +676,7 @@ async def chat_completions_stream(request: ChatCompletionRequest):
                                     if len(choices) > 0:
                                         delta = getattr(choices[0], "delta", None)
                                         if delta is not None:
-                                            text = getattr(delta, "content", None)
+                                            text = get_delta_text(delta)
                                             if text is not None:
                                                 yield text
                             except Exception as e_fallback:

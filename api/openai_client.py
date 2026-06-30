@@ -84,9 +84,23 @@ def estimate_token_count(text: str) -> int:
     return len(tokens)
 
 
+def get_delta_text(delta) -> Optional[str]:
+    """Extract text from a stream delta; some gateways use reasoning_content instead of content."""
+    if delta is None:
+        return None
+    text = getattr(delta, "content", None)
+    if text:
+        return text
+    for attr in ("reasoning_content", "reasoning"):
+        text = getattr(delta, attr, None)
+        if text:
+            return text
+    return None
+
+
 def parse_stream_response(completion: ChatCompletionChunk) -> str:
     r"""Parse the response of the stream API."""
-    return completion.choices[0].delta.content
+    return get_delta_text(completion.choices[0].delta)
 
 
 def handle_streaming_response(generator: Stream[ChatCompletionChunk]):
@@ -187,13 +201,21 @@ class OpenAIClient(ModelClient):
         self._input_type = input_type
         self._api_kwargs = {}  # add api kwargs when the OpenAI Client is called
 
+    def _client_kwargs(self, api_key: str) -> Dict[str, Any]:
+        # Some OpenAI-compatible gateways block the SDK's default User-Agent.
+        return {
+            "api_key": api_key,
+            "base_url": self.base_url,
+            "default_headers": {"User-Agent": "DeepWiki/1.0"},
+        }
+
     def init_sync_client(self):
         api_key = self._api_key or os.getenv(self._env_api_key_name)
         if not api_key:
             raise ValueError(
                 f"Environment variable {self._env_api_key_name} must be set"
             )
-        return OpenAI(api_key=api_key, base_url=self.base_url)
+        return OpenAI(**self._client_kwargs(api_key))
 
     def init_async_client(self):
         api_key = self._api_key or os.getenv(self._env_api_key_name)
@@ -201,7 +223,7 @@ class OpenAIClient(ModelClient):
             raise ValueError(
                 f"Environment variable {self._env_api_key_name} must be set"
             )
-        return AsyncOpenAI(api_key=api_key, base_url=self.base_url)
+        return AsyncOpenAI(**self._client_kwargs(api_key))
 
     # def _parse_chat_completion(self, completion: ChatCompletion) -> "GeneratorOutput":
     #     # TODO: raw output it is better to save the whole completion as a source of truth instead of just the message
@@ -443,9 +465,9 @@ class OpenAIClient(ModelClient):
                     if len(choices) > 0:
                         delta = getattr(choices[0], "delta", None)
                         if delta is not None:
-                            text = getattr(delta, "content", None)
+                            text = get_delta_text(delta)
                             if text is not None:
-                                accumulated_content += text or ""
+                                accumulated_content += text
                 # Return the mock completion object that will be processed by the chat_completion_parser
                 return ChatCompletion(
                     id = id,
